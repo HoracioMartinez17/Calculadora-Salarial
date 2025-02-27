@@ -268,7 +268,7 @@ const WorkHoursTracker = () => {
         size="middle"
         style={{ display: "flex", width: "100%", boxSizing: "border-box" }}
       >
-        <Card style={{ width: "100%", boxSizing: "border-box" }}>
+        <Card style={{ width: "100%", boxSizing: "border-box", background: "#dbdabc" }}>
           <Row gutter={[8, 16]}>
             <Col xs={24} sm={8}>
               <div style={{ marginBottom: "8px" }}>
@@ -307,7 +307,15 @@ const WorkHoursTracker = () => {
               </div>
             </Col>
             <Col xs={24} sm={4} style={{ display: "flex", alignItems: "flex-end" }}>
-              <Button type="primary" onClick={addEntry} style={{ width: "100%" }}>
+              <Button
+                type="primary"
+                onClick={addEntry}
+                style={{
+                  width: "100%",
+                  backgroundColor: "#206655", // Cambia este color
+                  borderColor: "#1c994c", // Asegúrate de cambiar también el borde
+                }}
+              >
                 Añadir
               </Button>
             </Col>
@@ -329,36 +337,58 @@ const WorkHoursTracker = () => {
         </div>
 
         <Card
-          title="Resumen"
+          title={<span style={{ color: "#07250e" }}>Resumen</span>}
           bordered={false}
-          style={{ background: "#f5f5f5", width: "100%", boxSizing: "border-box" }}
+          style={{ background: "#e5e9b3", width: "100%", boxSizing: "border-box" }}
         >
-          <Row gutter={[16, 8]}>
+          <Row gutter={[16, 8]} style={{ color: "#07250e" }}>
             <Col xs={24} md={12}>
-              <Text strong>Contrato mensual:</Text> {contractConfig.contractHoursPerMonth}{" "}
-              horas
+              <Text strong style={{ color: "#07250e" }}>
+                Contrato mensual:
+              </Text>{" "}
+              <span style={{ color: "#07250e" }}>
+                {contractConfig.contractHoursPerMonth} horas
+              </span>
             </Col>
             <Col xs={24} md={12}>
-              <Text strong>Tarifas:</Text> {contractConfig.hourlyRate}€/h (normal),{" "}
-              {contractConfig.extraHourlyRate}€/h (extra)
+              <Text strong style={{ color: "#07250e" }}>
+                Tarifas:
+              </Text>{" "}
+              <span style={{ color: "#07250e" }}>
+                {contractConfig.hourlyRate}€/h (normal), {contractConfig.extraHourlyRate}
+                €/h (extra)
+              </span>
             </Col>
             <Col xs={24} md={12}>
-              <Text strong>Días trabajados:</Text> {uniqueDaysWorked} días
+              <Text strong style={{ color: "#07250e" }}>
+                Días trabajados:
+              </Text>{" "}
+              <span style={{ color: "#07250e" }}>{uniqueDaysWorked} días</span>
             </Col>
             <Col xs={24} md={12}>
-              <Text strong>Horas trabajadas en total:</Text>{" "}
-              {formatHoursToHHMM(totalHours)}
+              <Text strong style={{ color: "#07250e" }}>
+                Horas trabajadas en total:
+              </Text>{" "}
+              <span style={{ color: "#07250e" }}>{formatHoursToHHMM(totalHours)}</span>
             </Col>
             <Col xs={24} md={12}>
-              <Text strong>Horas normales:</Text> {formatHoursToHHMM(regularHours)} (€
-              {regularPay.toFixed(2)})
+              <Text strong style={{ color: "#07250e" }}>
+                Horas normales:
+              </Text>{" "}
+              <span style={{ color: "#07250e" }}>
+                {formatHoursToHHMM(regularHours)} (€{regularPay.toFixed(2)})
+              </span>
             </Col>
             <Col xs={24} md={12}>
-              <Text strong>Horas extras trabajadas:</Text>{" "}
-              {formatHoursToHHMM(totalExtraHours)} (€{extraPay.toFixed(2)})
+              <Text strong style={{ color: "#07250e" }}>
+                Horas extras trabajadas:
+              </Text>{" "}
+              <span style={{ color: "#07250e" }}>
+                {formatHoursToHHMM(totalExtraHours)} (€{extraPay.toFixed(2)})
+              </span>
             </Col>
             <Col xs={24}>
-              <Text strong style={{ fontSize: "1.1em" }}>
+              <Text strong style={{ fontSize: "1.1em", color: "#12a534" }}>
                 Pago Total: €{totalPay.toFixed(2)}
               </Text>
             </Col>
