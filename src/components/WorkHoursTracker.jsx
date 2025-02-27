@@ -13,7 +13,7 @@ import {
   InputNumber,
   Form,
 } from "antd";
-import { DeleteOutlined, SettingOutlined } from "@ant-design/icons";
+import { DeleteOutlined, SettingOutlined, FilePdfOutlined } from "@ant-design/icons";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { getMonth, getYear, format } from "date-fns";
@@ -133,35 +133,36 @@ const WorkHoursTracker = () => {
       10,
       doc.autoTable.previous.finalY + 20
     );
+    // doc.text(
+    //   `Tarifa normal: ${contractConfig.hourlyRate}€/h. Tarifa extra: ${contractConfig.extraHourlyRate}€/h`,
+    //   10,
+    //   doc.autoTable.previous.finalY + 30
+    // );
     doc.text(
-      `Tarifa normal: ${contractConfig.hourlyRate}€/h. Tarifa extra: ${contractConfig.extraHourlyRate}€/h`,
+      `Días trabajados: ${uniqueDaysWorked} días`,
       10,
       doc.autoTable.previous.finalY + 30
     );
     doc.text(
-      `Días trabajados: ${uniqueDaysWorked} días`,
+      `Horas trabajadas en total: ${formatHoursToHHMM(totalHours)}`,
       10,
       doc.autoTable.previous.finalY + 40
     );
     doc.text(
-      `Horas trabajadas en total: ${formatHoursToHHMM(totalHours)}`,
+      `Horas regulares: ${formatHoursToHHMM(regularHours)} `,
+      // (€${regularPay.toFixed(2)})
       10,
       doc.autoTable.previous.finalY + 50
     );
     doc.text(
-      `Horas regulares: ${formatHoursToHHMM(regularHours)} (€${regularPay.toFixed(2)})`,
+      `Horas extras: ${formatHoursToHHMM(totalExtraHours)} (€${extraPay.toFixed(2)})`,
       10,
       doc.autoTable.previous.finalY + 60
     );
     doc.text(
-      `Horas extras: ${formatHoursToHHMM(totalExtraHours)} (€${extraPay.toFixed(2)})`,
+      `Pago total de horas extras: €${extraPay.toFixed(2)}`,
       10,
-      doc.autoTable.previous.finalY + 70
-    );
-    doc.text(
-      `Pago Total: €${totalPay.toFixed(2)}`,
-      10,
-      doc.autoTable.previous.finalY + 80
+      doc.autoTable.previous.finalY + 75
     );
 
     doc.save("horas_trabajadas.pdf");
@@ -184,7 +185,7 @@ const WorkHoursTracker = () => {
           size="small"
           style={{
             borderColor: "#ff4d4f",
-            color: "#ff4d4f"
+            color: "#ff4d4f",
           }}
         />
       ),
@@ -354,7 +355,7 @@ const WorkHoursTracker = () => {
                 {contractConfig.contractHoursPerMonth} horas
               </span>
             </Col>
-            <Col xs={24} md={12}>
+            {/* <Col xs={24} md={12}>
               <Text strong style={{ color: "#07250e" }}>
                 Tarifas:
               </Text>{" "}
@@ -362,7 +363,7 @@ const WorkHoursTracker = () => {
                 {contractConfig.hourlyRate}€/h (normal), {contractConfig.extraHourlyRate}
                 €/h (extra)
               </span>
-            </Col>
+            </Col> */}
             <Col xs={24} md={12}>
               <Text strong style={{ color: "#07250e" }}>
                 Días trabajados:
@@ -380,7 +381,8 @@ const WorkHoursTracker = () => {
                 Horas normales:
               </Text>{" "}
               <span style={{ color: "#07250e" }}>
-                {formatHoursToHHMM(regularHours)} (€{regularPay.toFixed(2)})
+                {formatHoursToHHMM(regularHours)}
+                {/* (€{regularPay.toFixed(2)} */}
               </span>
             </Col>
             <Col xs={24} md={12}>
@@ -393,7 +395,7 @@ const WorkHoursTracker = () => {
             </Col>
             <Col xs={24}>
               <Text strong style={{ fontSize: "1.1em", color: "#12a534" }}>
-                Pago Total: €{totalPay.toFixed(2)}
+              Pago total horas extras: €${extraPay.toFixed(2)}
               </Text>
             </Col>
           </Row>
@@ -402,10 +404,30 @@ const WorkHoursTracker = () => {
         <Button
           onClick={exportToPDF}
           type="primary"
+          size="large"
           disabled={loading}
-          style={{ width: "100%" }}
+          style={{
+            width: "100%",
+            backgroundColor: "#9eaf50",
+            borderColor: "#a9e0be",
+            color: "#072703",
+            fontSize: "calc(0.7rem + 0.5vw)",
+            fontWeight: "bold",
+            padding: "12px 0",
+            height: "auto",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "8px",
+          }}
         >
-          {loading ? <Spin /> : "Exportar a PDF"}
+          {loading ? (
+            <Spin />
+          ) : (
+            <>
+              Exportar a PDF <FilePdfOutlined style={{ marginLeft: "3px" }} />
+            </>
+          )}
         </Button>
       </Space>
     </div>
