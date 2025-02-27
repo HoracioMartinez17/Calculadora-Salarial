@@ -10,8 +10,10 @@ import {
   Card,
   Row,
   Col,
+  InputNumber,
+  Form,
 } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
+import { DeleteOutlined, SettingOutlined } from "@ant-design/icons";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { getMonth, getYear, format } from "date-fns";
@@ -27,14 +29,30 @@ const WorkHoursTracker = () => {
 
   const [form, setForm] = useState({ date: "", start: "14:00", end: "18:00" });
   const [loading, setLoading] = useState(false);
-  const contractHoursPerMonth = 40; // 10h semanales * 4 semanas = 40h mensuales
-  const hourlyRate = 7.65;
-  const extraHourlyRate = 9;
+
+  // Cargar configuraciones personalizadas desde localStorage o usar valores predeterminados
+  const [contractConfig, setContractConfig] = useState(() => {
+    const savedConfig = localStorage.getItem("workHoursConfig");
+    return savedConfig
+      ? JSON.parse(savedConfig)
+      : {
+          contractHoursPerMonth: 40, // Valor predeterminado: 40h
+          hourlyRate: 7.65, // Valor predeterminado: 7.65€
+          extraHourlyRate: 9, // Valor predeterminado: 9€
+        };
+  });
+
+  const [showConfigForm, setShowConfigForm] = useState(false);
 
   // Guardar entradas en localStorage cuando cambien
   useEffect(() => {
     localStorage.setItem("workHoursEntries", JSON.stringify(entries));
   }, [entries]);
+
+  // Guardar configuración en localStorage cuando cambie
+  useEffect(() => {
+    localStorage.setItem("workHoursConfig", JSON.stringify(contractConfig));
+  }, [contractConfig]);
 
   const calculateHours = (start, end) => {
     if (!start || !end) return 0;
@@ -55,7 +73,7 @@ const WorkHoursTracker = () => {
       ...prevEntries,
       { key: Date.now(), ...form, hoursWorked },
     ]);
-    setForm({ date: "", start: "14:00", end: "18:00" }); // Mantener 14:00 como hora de entrada predeterminada
+    setForm({ date: "", start: "14:00", end: "18:00" });
   };
 
   const deleteEntry = (key) => {
@@ -63,12 +81,31 @@ const WorkHoursTracker = () => {
     message.success("Entrada eliminada correctamente");
   };
 
+  const updateConfig = (values) => {
+    setContractConfig({
+      contractHoursPerMonth: values.contractHoursPerMonth,
+      hourlyRate: values.hourlyRate,
+      extraHourlyRate: values.extraHourlyRate,
+    });
+    setShowConfigForm(false);
+    message.success("Configuración guardada correctamente");
+  };
+
   // Cálculos para el resumen
   const totalHours = entries.reduce((sum, entry) => sum + entry.hoursWorked, 0);
 
   // Calcular horas extras como el total menos las contratadas mensualmente
-  const totalExtraHours = Math.max(0, totalHours - contractHoursPerMonth);
-  const totalPay = totalExtraHours * extraHourlyRate;
+  const totalExtraHours = Math.max(0, totalHours - contractConfig.contractHoursPerMonth);
+
+  // Calcular el pago de horas normales (limitado a las horas contratadas)
+  const regularHours = Math.min(totalHours, contractConfig.contractHoursPerMonth);
+  const regularPay = regularHours * contractConfig.hourlyRate;
+
+  // Calcular el pago de horas extras
+  const extraPay = totalExtraHours * contractConfig.extraHourlyRate;
+
+  // Calcular el pago total (horas normales + horas extras)
+  const totalPay = regularPay + extraPay;
 
   // Días únicos trabajados
   const uniqueDaysWorked = new Set(entries.map((entry) => entry.date)).size;
@@ -92,29 +129,39 @@ const WorkHoursTracker = () => {
     // Agregar el resumen con el formato solicitado
     doc.text("Resumen:", 10, doc.autoTable.previous.finalY + 10);
     doc.text(
-      `Contrato mensual: ${contractHoursPerMonth} horas.`,
+      `Contrato mensual: ${contractConfig.contractHoursPerMonth} horas.`,
       10,
       doc.autoTable.previous.finalY + 20
     );
     doc.text(
-      `Días trabajados: ${uniqueDaysWorked} días`,
+      `Tarifa normal: ${contractConfig.hourlyRate}€/h. Tarifa extra: ${contractConfig.extraHourlyRate}€/h`,
       10,
       doc.autoTable.previous.finalY + 30
     );
     doc.text(
-      `Horas trabajadas en total: ${formatHoursToHHMM(totalHours)}`,
+      `Días trabajados: ${uniqueDaysWorked} días`,
       10,
       doc.autoTable.previous.finalY + 40
     );
     doc.text(
-      `Horas extras trabajadas: ${formatHoursToHHMM(totalExtraHours)}`,
+      `Horas trabajadas en total: ${formatHoursToHHMM(totalHours)}`,
       10,
       doc.autoTable.previous.finalY + 50
     );
     doc.text(
-      `Pago Total: €${totalPay.toFixed(2)}`,
+      `Horas regulares: ${formatHoursToHHMM(regularHours)} (€${regularPay.toFixed(2)})`,
       10,
       doc.autoTable.previous.finalY + 60
+    );
+    doc.text(
+      `Horas extras: ${formatHoursToHHMM(totalExtraHours)} (€${extraPay.toFixed(2)})`,
+      10,
+      doc.autoTable.previous.finalY + 70
+    );
+    doc.text(
+      `Pago Total: €${totalPay.toFixed(2)}`,
+      10,
+      doc.autoTable.previous.finalY + 80
     );
 
     doc.save("horas_trabajadas.pdf");
@@ -155,6 +202,66 @@ const WorkHoursTracker = () => {
       >
         Registro de Horas
       </Title>
+
+      <Button
+        icon={<SettingOutlined />}
+        onClick={() => setShowConfigForm(!showConfigForm)}
+        style={{ marginBottom: "16px" }}
+      >
+        Configuración
+      </Button>
+
+      {showConfigForm && (
+        <Card
+          title="Configuración de Contrato"
+          style={{ marginBottom: "16px", width: "100%", boxSizing: "border-box" }}
+        >
+          <Form initialValues={contractConfig} onFinish={updateConfig} layout="vertical">
+            <Row gutter={[16, 0]}>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name="contractHoursPerMonth"
+                  label="Horas contratadas al mes"
+                  rules={[{ required: true, message: "Este campo es obligatorio" }]}
+                >
+                  <InputNumber min={0} step={1} style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+              <Col xs={12} sm={8}>
+                <Form.Item
+                  name="hourlyRate"
+                  label="Tarifa hora normal (€)"
+                  rules={[{ required: true, message: "Este campo es obligatorio" }]}
+                >
+                  <InputNumber
+                    min={0}
+                    step={0.01}
+                    precision={2}
+                    style={{ width: "100%" }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={12} sm={8}>
+                <Form.Item
+                  name="extraHourlyRate"
+                  label="Tarifa hora extra (€)"
+                  rules={[{ required: true, message: "Este campo es obligatorio" }]}
+                >
+                  <InputNumber
+                    min={0}
+                    step={0.01}
+                    precision={2}
+                    style={{ width: "100%" }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Button type="primary" htmlType="submit">
+              Guardar Configuración
+            </Button>
+          </Form>
+        </Card>
+      )}
 
       <Space
         direction="vertical"
@@ -228,7 +335,12 @@ const WorkHoursTracker = () => {
         >
           <Row gutter={[16, 8]}>
             <Col xs={24} md={12}>
-              <Text strong>Contrato mensual:</Text> {contractHoursPerMonth} horas
+              <Text strong>Contrato mensual:</Text> {contractConfig.contractHoursPerMonth}{" "}
+              horas
+            </Col>
+            <Col xs={24} md={12}>
+              <Text strong>Tarifas:</Text> {contractConfig.hourlyRate}€/h (normal),{" "}
+              {contractConfig.extraHourlyRate}€/h (extra)
             </Col>
             <Col xs={24} md={12}>
               <Text strong>Días trabajados:</Text> {uniqueDaysWorked} días
@@ -238,8 +350,12 @@ const WorkHoursTracker = () => {
               {formatHoursToHHMM(totalHours)}
             </Col>
             <Col xs={24} md={12}>
+              <Text strong>Horas normales:</Text> {formatHoursToHHMM(regularHours)} (€
+              {regularPay.toFixed(2)})
+            </Col>
+            <Col xs={24} md={12}>
               <Text strong>Horas extras trabajadas:</Text>{" "}
-              {formatHoursToHHMM(totalExtraHours)}
+              {formatHoursToHHMM(totalExtraHours)} (€{extraPay.toFixed(2)})
             </Col>
             <Col xs={24}>
               <Text strong style={{ fontSize: "1.1em" }}>
