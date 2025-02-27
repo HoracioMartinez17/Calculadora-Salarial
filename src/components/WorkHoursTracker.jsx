@@ -182,6 +182,10 @@ const WorkHoursTracker = () => {
           icon={<DeleteOutlined />}
           onClick={() => deleteEntry(record.key)}
           size="small"
+          style={{
+            borderColor: "#ff4d4f",
+            color: "#ff4d4f"
+          }}
         />
       ),
     },
