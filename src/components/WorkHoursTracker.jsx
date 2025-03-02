@@ -187,7 +187,7 @@ const WorkHoursTracker = () => {
       doc.autoTable.previous.finalY + 60
     );
     doc.text(
-      `Total extras: €${extraPay.toFixed(2)}`,
+      `Pago total horas extras: €${extraPay.toFixed(2)}`,
       10,
       doc.autoTable.previous.finalY + 75
     );
@@ -448,7 +448,7 @@ const WorkHoursTracker = () => {
             </Col>
             <Col xs={24}>
               <Text strong style={{ fontSize: "1.1em", color: "#12a534" }}>
-                Total extras: €{extraPay.toFixed(2)}
+                Pago total horas extras: €{extraPay.toFixed(2)}
               </Text>
             </Col>
           </Row>
