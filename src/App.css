@@ -93,6 +93,27 @@ html, body, #root, .ant-layout {
     width: 100% !important;
     margin: 0 !important;
   }
+  
+  .ant-table-cell .ant-space {
+    display: flex !important;
+    margin-bottom: 4px;
+  }
+  
+  .ant-table-cell .ant-btn {
+    min-width: 32px;
+    padding: 0 6px;
+  }
+  
+  /* Destacar el botón de edición */
+  .ant-btn-primary.ant-btn-sm {
+    background-color: #1890ff;
+  }
+  
+  /* Destacar el título del formulario de edición */
+  .ant-card-head-title {
+    font-size: 14px;
+    font-weight: bold;
+  }
 }
 
 /* Mejora para visualización de tabla en dispositivos móviles */
@@ -107,6 +128,14 @@ html, body, #root, .ant-layout {
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Estilos para los botones de acción en la tabla */
+.table-responsive .ant-btn {
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 480px) {

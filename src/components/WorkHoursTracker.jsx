@@ -12,8 +12,14 @@ import {
   Col,
   InputNumber,
   Form,
+  Tooltip,
 } from "antd";
-import { DeleteOutlined, SettingOutlined, FilePdfOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  SettingOutlined,
+  FilePdfOutlined,
+  EditOutlined,
+} from "@ant-design/icons";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { getMonth, getYear, format } from "date-fns";
@@ -29,6 +35,7 @@ const WorkHoursTracker = () => {
 
   const [form, setForm] = useState({ date: "", start: "14:00", end: "18:00" });
   const [loading, setLoading] = useState(false);
+  const [editingKey, setEditingKey] = useState(null); // Nuevo estado para rastrear qué entrada estamos editando
 
   // Cargar configuraciones personalizadas desde localStorage o usar valores predeterminados
   const [contractConfig, setContractConfig] = useState(() => {
@@ -63,22 +70,58 @@ const WorkHoursTracker = () => {
     return parseFloat((totalMinutes / 60).toFixed(2));
   };
 
+  // Función para iniciar la edición de una entrada
+  const editEntry = (record) => {
+    setForm({
+      date: record.date,
+      start: record.start,
+      end: record.end,
+    });
+    setEditingKey(record.key);
+  };
+
+  // Función para cancelar la edición
+  const cancelEdit = () => {
+    setForm({ date: "", start: "14:00", end: "18:00" });
+    setEditingKey(null);
+  };
+
   const addEntry = () => {
     if (!form.date || !form.start || !form.end) {
       message.error("Todos los campos son obligatorios");
       return;
     }
+
     const hoursWorked = calculateHours(form.start, form.end);
-    setEntries((prevEntries) => [
-      ...prevEntries,
-      { key: Date.now(), ...form, hoursWorked },
-    ]);
+
+    if (editingKey !== null) {
+      // Actualizar entrada existente
+      setEntries((prevEntries) =>
+        prevEntries.map((entry) =>
+          entry.key === editingKey ? { ...entry, ...form, hoursWorked } : entry
+        )
+      );
+      message.success("Entrada actualizada correctamente");
+      setEditingKey(null);
+    } else {
+      // Crear nueva entrada
+      setEntries((prevEntries) => [
+        ...prevEntries,
+        { key: Date.now(), ...form, hoursWorked },
+      ]);
+    }
+
     setForm({ date: "", start: "14:00", end: "18:00" });
   };
 
   const deleteEntry = (key) => {
     setEntries((prevEntries) => prevEntries.filter((entry) => entry.key !== key));
     message.success("Entrada eliminada correctamente");
+
+    // Si estamos editando esta entrada, cancelar la edición
+    if (editingKey === key) {
+      cancelEdit();
+    }
   };
 
   const updateConfig = (values) => {
@@ -93,21 +136,11 @@ const WorkHoursTracker = () => {
 
   // Cálculos para el resumen
   const totalHours = entries.reduce((sum, entry) => sum + entry.hoursWorked, 0);
-
-  // Calcular horas extras como el total menos las contratadas mensualmente
   const totalExtraHours = Math.max(0, totalHours - contractConfig.contractHoursPerMonth);
-
-  // Calcular el pago de horas normales (limitado a las horas contratadas)
   const regularHours = Math.min(totalHours, contractConfig.contractHoursPerMonth);
   const regularPay = regularHours * contractConfig.hourlyRate;
-
-  // Calcular el pago de horas extras
   const extraPay = totalExtraHours * contractConfig.extraHourlyRate;
-
-  // Calcular el pago total (horas normales + horas extras)
   const totalPay = regularPay + extraPay;
-
-  // Días únicos trabajados
   const uniqueDaysWorked = new Set(entries.map((entry) => entry.date)).size;
 
   // Función para convertir horas decimales a formato "hh:mm"
@@ -133,11 +166,6 @@ const WorkHoursTracker = () => {
       10,
       doc.autoTable.previous.finalY + 20
     );
-    // doc.text(
-    //   `Tarifa normal: ${contractConfig.hourlyRate}€/h. Tarifa extra: ${contractConfig.extraHourlyRate}€/h`,
-    //   10,
-    //   doc.autoTable.previous.finalY + 30
-    // );
     doc.text(
       `Días trabajados: ${uniqueDaysWorked} días`,
       10,
@@ -150,7 +178,6 @@ const WorkHoursTracker = () => {
     );
     doc.text(
       `Horas regulares: ${formatHoursToHHMM(regularHours)} `,
-      // (€${regularPay.toFixed(2)})
       10,
       doc.autoTable.previous.finalY + 50
     );
@@ -160,7 +187,7 @@ const WorkHoursTracker = () => {
       doc.autoTable.previous.finalY + 60
     );
     doc.text(
-      `Pago total de horas extras: €${extraPay.toFixed(2)}`,
+      `Total extras: €${extraPay.toFixed(2)}`,
       10,
       doc.autoTable.previous.finalY + 75
     );
@@ -178,16 +205,31 @@ const WorkHoursTracker = () => {
       title: "Acciones",
       key: "actions",
       render: (_, record) => (
-        <Button
-          type="danger"
-          icon={<DeleteOutlined />}
-          onClick={() => deleteEntry(record.key)}
-          size="small"
-          style={{
-            borderColor: "#ff4d4f",
-            color: "#ff4d4f",
-          }}
-        />
+        <Space>
+          <Tooltip title="Editar">
+            <Button
+              icon={<EditOutlined />}
+              onClick={() => editEntry(record)}
+              size="small"
+              style={{
+                borderColor: "#1890ff",
+                color: "#1890ff",
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Eliminar">
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => deleteEntry(record.key)}
+              size="small"
+              style={{
+                borderColor: "#ff4d4f",
+                color: "#ff4d4f",
+              }}
+            />
+          </Tooltip>
+        </Space>
       ),
     },
   ];
@@ -273,7 +315,10 @@ const WorkHoursTracker = () => {
         size="middle"
         style={{ display: "flex", width: "100%", boxSizing: "border-box" }}
       >
-        <Card style={{ width: "100%", boxSizing: "border-box", background: "#dbdabc" }}>
+        <Card
+          title={editingKey !== null ? "Editar entrada" : "Nueva entrada"}
+          style={{ width: "100%", boxSizing: "border-box", background: "#dbdabc" }}
+        >
           <Row gutter={[8, 16]}>
             <Col xs={24} sm={8}>
               <div style={{ marginBottom: "8px" }}>
@@ -311,19 +356,39 @@ const WorkHoursTracker = () => {
                 />
               </div>
             </Col>
-            <Col xs={24} sm={4} style={{ display: "flex", alignItems: "flex-end" }}>
-              <Button
-                type="primary"
-                onClick={addEntry}
-                style={{
-                  width: "100%",
-                  backgroundColor: "#206655", // Cambia este color
-                  borderColor: "#1c994c", // Asegúrate de cambiar también el borde
-                }}
-              >
-                Añadir
-              </Button>
+            <Col xs={editingKey !== null ? 12 : 24} sm={editingKey !== null ? 2 : 4}>
+              <div style={{ marginBottom: "8px" }}>
+                <label>&nbsp;</label> {/* Etiqueta vacía para mantener el alineamiento */}
+                <Button
+                  type="primary"
+                  onClick={addEntry}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#206655",
+                    borderColor: "#1c994c",
+                  }}
+                >
+                  {editingKey !== null ? "Guardar" : "Añadir"}
+                </Button>
+              </div>
             </Col>
+            {editingKey !== null && (
+              <Col xs={12} sm={2}>
+                <div style={{ marginBottom: "8px" }}>
+                  <label>&nbsp;</label>{" "}
+                  {/* Etiqueta vacía para mantener el alineamiento */}
+                  <Button
+                    onClick={cancelEdit}
+                    style={{
+                      width: "100%",
+                      backgroundColor: "#f0f0f0",
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </Col>
+            )}
           </Row>
         </Card>
 
@@ -355,15 +420,6 @@ const WorkHoursTracker = () => {
                 {contractConfig.contractHoursPerMonth} horas
               </span>
             </Col>
-            {/* <Col xs={24} md={12}>
-              <Text strong style={{ color: "#07250e" }}>
-                Tarifas:
-              </Text>{" "}
-              <span style={{ color: "#07250e" }}>
-                {contractConfig.hourlyRate}€/h (normal), {contractConfig.extraHourlyRate}
-                €/h (extra)
-              </span>
-            </Col> */}
             <Col xs={24} md={12}>
               <Text strong style={{ color: "#07250e" }}>
                 Días trabajados:
@@ -380,10 +436,7 @@ const WorkHoursTracker = () => {
               <Text strong style={{ color: "#07250e" }}>
                 Horas normales:
               </Text>{" "}
-              <span style={{ color: "#07250e" }}>
-                {formatHoursToHHMM(regularHours)}
-                {/* (€{regularPay.toFixed(2)} */}
-              </span>
+              <span style={{ color: "#07250e" }}>{formatHoursToHHMM(regularHours)}</span>
             </Col>
             <Col xs={24} md={12}>
               <Text strong style={{ color: "#07250e" }}>
@@ -395,7 +448,7 @@ const WorkHoursTracker = () => {
             </Col>
             <Col xs={24}>
               <Text strong style={{ fontSize: "1.1em", color: "#12a534" }}>
-              Pago total horas extras: €${extraPay.toFixed(2)}
+                Total extras: €{extraPay.toFixed(2)}
               </Text>
             </Col>
           </Row>
